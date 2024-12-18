@@ -24,7 +24,27 @@
             height: 60px;
             line-height: 30px;
             z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
+        header h1 {
+            margin: 0;
+        }
+
+        /* 햄버거 메뉴 버튼 */
+        .menu-toggle {
+            display: none;
+            position: absolute;
+            left: 15px;
+            top: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #fff;
+            cursor: pointer;
+        }
+
         .container {
             max-width: 1000px;
             margin: 80px auto 20px auto; /* 헤더 높이 및 사이드 메뉴 너비 만큼 여백 */
@@ -33,7 +53,9 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             flex: 1;
+            overflow-x: auto; /* 모바일에서 테이블 스크롤 대응 */
         }
+
         form {
             display: flex;
             flex-wrap: wrap;
@@ -53,6 +75,7 @@
             color: #fff;
             border-radius: 4px;
             cursor: pointer;
+            white-space: nowrap;
         }
         button:hover {
             background-color: #0056b3;
@@ -71,6 +94,7 @@
             border-bottom: 1px solid #ddd;
             text-align: left;
             position: relative;
+            white-space: nowrap; 
         }
         th {
             cursor: pointer;
@@ -114,6 +138,7 @@
         #csv-file {
             display: none;
         }
+
         /* 사이드 메뉴 스타일 */
         .side-menu {
             width: 200px;
@@ -126,6 +151,8 @@
             padding-top: 60px; /* 헤더 높이 만큼 여백 */
             box-sizing: border-box;
             overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 1100;
         }
         .side-menu button {
             width: 100%;
@@ -144,12 +171,14 @@
         .hidden {
             display: none;
         }
+
         /* 계산기 스타일 */
         .calculator-container {
             display: flex;
             justify-content: center;
             gap: 20px;
             align-items: start;
+            flex-wrap: wrap;
         }
         .calculator {
             max-width: 320px;
@@ -213,7 +242,6 @@
         .calculator-buttons button.clear:hover {
             background-color: #c82333;
         }
-        /* 계산 히스토리 */
         .calculator-history {
             max-width: 200px;
             background: #f7f7f7;
@@ -246,6 +274,7 @@
             border-radius: 4px;
             cursor: pointer;
         }
+
         /* 관리 화면 스타일 */
         .manage-screen {
             max-width: 600px;
@@ -263,6 +292,7 @@
             display: flex;
             gap: 10px;
             margin-bottom: 20px;
+            flex-wrap: wrap;
         }
         .manage-screen form input[type="text"] {
             flex: 1;
@@ -292,6 +322,7 @@
         .manage-screen li button:hover {
             background-color: #c82333;
         }
+
         /* 데이터 분석 화면 스타일 */
         .data-analysis-screen {
             max-width: 800px;
@@ -322,6 +353,7 @@
             display: block;
             margin: 0 auto 20px auto;
         }
+
         /* 토글 버튼 스타일 */
         .toggle-button {
             padding: 5px 10px;
@@ -331,10 +363,12 @@
             border-radius: 4px;
             cursor: pointer;
             margin-bottom: 10px;
+            white-space: nowrap;
         }
         .toggle-button:hover {
             background-color: #5a6268;
         }
+
         /* 설정 화면 스타일 */
         .settings-screen {
             max-width: 400px;
@@ -356,6 +390,7 @@
         .settings-screen label {
             font-weight: bold;
         }
+
         /* 전체항목 화면 스타일 */
         .all-items-screen {
             max-width: 1000px;
@@ -378,6 +413,7 @@
             padding: 12px;
             border-bottom: 1px solid #ddd;
             text-align: left;
+            white-space: nowrap;
         }
         .all-items-table th {
             background-color: #f2f2f2;
@@ -416,6 +452,7 @@
         }
         #calendar-container {
             margin-bottom: 20px;
+            overflow-x: auto;
         }
         #calendar-header {
             display: flex;
@@ -447,22 +484,17 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             padding: 10px;
+            white-space: nowrap;
         }
-        .calendar .day {
+        .calendar .day, .calendar .weekly-total-cell {
             background-color: #fff;
             border: 1px solid #ddd;
             border-radius: 4px;
             padding: 10px;
             position: relative;
             min-height: 100px;
-        }
-        .calendar .weekly-total-cell {
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
-            min-height: 100px;
-            position: relative;
+            box-sizing: border-box;
+            white-space: normal;
         }
         .calendar .income {
             font-size: 0.9em;
@@ -486,16 +518,57 @@
             font-size: 0.8em;
             color: #666;
         }
+
+        /* 반응형 디자인 */
+        @media (max-width: 1024px) {
+            .data-analysis-screen select {
+                width: auto;
+                flex: 1;
+            }
+        }
+
         @media (max-width: 768px) {
             .side-menu {
-                width: 150px;
+                transform: translateX(-200px);
             }
             header {
-                left: 150px;
+                left: 0;
+            }
+            body {
+                flex-direction: column;
+            }
+            .container {
+                margin: 80px 10px 20px 10px;
+            }
+            .menu-toggle {
+                display: block;
             }
             .calendar .day {
                 min-height: 80px;
             }
+        }
+
+        @media (max-width: 480px) {
+            .data-analysis-controls {
+                flex-direction: column;
+            }
+            .filters, .csv-buttons, .all-items-filters {
+                flex-direction: column;
+            }
+            form {
+                flex-direction: column;
+            }
+            .calculator-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .manage-screen form, .settings-screen form {
+                flex-direction: column;
+            }
+        }
+
+        .side-menu.show {
+            transform: translateX(0);
         }
     </style>
     <!-- Chart.js CDN -->
@@ -515,6 +588,7 @@
     </div>
 
     <header>
+        <button class="menu-toggle" id="menu-toggle">&#9776;</button>
         <h1>예산 추적기</h1>
     </header>
     <div class="container">
@@ -545,8 +619,8 @@
                     <option value="엔터테인먼트">엔터테인먼트</option>
                     <option value="기타">기타</option>
                 </select>
-                <input type="date" id="filter-start-date" placeholder="시작 날짜">
-                <input type="date" id="filter-end-date" placeholder="종료 날짜">
+                <input type="date" id="filter-start-date">
+                <input type="date" id="filter-end-date">
                 <button type="button" id="clear-filters">필터 초기화</button>
             </div>
 
@@ -617,22 +691,18 @@
                         <button data-value="8">8</button>
                         <button data-value="9">9</button>
                         <button class="operator" data-value="/">/</button>
-
                         <button data-value="4">4</button>
                         <button data-value="5">5</button>
                         <button data-value="6">6</button>
                         <button class="operator" data-value="*">*</button>
-
                         <button data-value="1">1</button>
                         <button data-value="2">2</button>
                         <button data-value="3">3</button>
                         <button class="operator" data-value="-">-</button>
-
                         <button data-value="0">0</button>
                         <button data-value=".">.</button>
                         <button class="equal" data-action="calculate">=</button>
                         <button class="operator" data-value="+">+</button>
-
                         <button class="clear" data-action="clear">C</button>
                     </div>
                     <button id="back-main-from-calculator" style="display:block; margin: 10px auto;">돌아가기</button>
@@ -704,7 +774,6 @@
         <div id="all-items-screen" class="hidden">
             <div class="all-items-screen">
                 <h2>전체항목</h2>
-                <!-- 전체항목 필터 섹션 -->
                 <div class="all-items-filters">
                     <select id="all-items-filter-category">
                         <option value="모두">모두</option>
@@ -752,6 +821,10 @@
             const tableHeaders = document.querySelectorAll('#budget-table th[data-sort]');
             const typeSelect = document.getElementById('type');
             const categorySelect = document.getElementById('category');
+
+            // 사이드 메뉴 관련
+            const menuToggleBtn = document.getElementById('menu-toggle');
+            const sideMenu = document.querySelector('.side-menu');
 
             // 사이드 메뉴 버튼
             const goMainBtn = document.getElementById('go-main');
@@ -840,8 +913,6 @@
             let currentCurrency = localStorage.getItem('currency') || '원';
             let hiddenIndicesMainScreen = [];
             let allItemsSort = { key: null, order: 'asc' };
-
-            // History array for calculator
             let calcHistory = [];
 
             // Set default date
@@ -900,7 +971,6 @@
                 });
             };
 
-            // Render main list
             const renderList = () => {
                 let filteredData = budgetData.filter((item, index) => !hiddenIndicesMainScreen.includes(index));
 
@@ -988,7 +1058,6 @@
                 expenseTotalDisplay.textContent = `총 지출: ${formatCurrency(expenseTotal)}`;
             };
 
-            // Render all items with sorting and filtering
             const renderAllItems = () => {
                 let filtered = [...budgetData];
 
@@ -1011,7 +1080,7 @@
                 }
 
                 allItemsBody.innerHTML = '';
-                filtered.forEach((item, index) => {
+                filtered.forEach(item => {
                     const originalIndex = budgetData.indexOf(item);
                     const row = document.createElement('tr');
 
@@ -1084,7 +1153,6 @@
                 }
             };
 
-            // Form submit
             form.addEventListener('submit', (event) => {
                 event.preventDefault();
 
@@ -1112,7 +1180,6 @@
                 }
             });
 
-            // Sorting main screen
             tableHeaders.forEach(header => {
                 header.addEventListener('click', () => {
                     const sortKey = header.getAttribute('data-sort');
@@ -1126,7 +1193,6 @@
                 });
             });
 
-            // Sorting all items screen
             allItemsHeaders.forEach(header => {
                 header.addEventListener('click', () => {
                     const sortKey = header.getAttribute('data-sort');
@@ -1142,7 +1208,6 @@
 
             typeSelect.addEventListener('change', renderCategories);
 
-            // Filters main
             filterCategory.addEventListener('change', renderList);
             filterStartDate.addEventListener('change', renderList);
             filterEndDate.addEventListener('change', renderList);
@@ -1153,7 +1218,6 @@
                 renderList();
             });
 
-            // Filters all items
             allItemsFilterCategory.addEventListener('change', renderAllItems);
             allItemsFilterStartDate.addEventListener('change', renderAllItems);
             allItemsFilterEndDate.addEventListener('change', renderAllItems);
@@ -1164,7 +1228,6 @@
                 renderAllItems();
             });
 
-            // CSV export
             exportCsvBtn.addEventListener('click', () => {
                 let csvContent = "\uFEFF유형,날짜,카테고리,설명,금액\r\n";
                 budgetData.forEach(item => {
@@ -1182,7 +1245,6 @@
                 document.body.removeChild(link);
             });
 
-            // CSV import
             importCsvBtn.addEventListener('click', () => {
                 csvFileInput.click();
             });
@@ -1534,6 +1596,11 @@
                 }
             });
 
+            // 사이드 메뉴 토글 (모바일)
+            menuToggleBtn.addEventListener('click', () => {
+                sideMenu.classList.toggle('show');
+            });
+
             // 초기 상태: 필터, CSV 버튼 숨김
             filtersSection.classList.add('hidden');
             csvButtonsSection.classList.add('hidden');
@@ -1563,7 +1630,6 @@
                 let weekDay = 0;
                 let weeklyData = { income: 0, expense: 0 };
 
-                // pad empty cells before first day
                 for (let i = 0; i < firstDay; i++) {
                     const emptyCell = document.createElement('div');
                     emptyCell.classList.add('day');
@@ -1606,7 +1672,6 @@
                     calendarElement.appendChild(dayCell);
                     weekDay++;
                     if (weekDay === 7 || currentDay === lastDate) {
-                        // 주간합계 칸
                         const weeklyTotalCell = document.createElement('div');
                         weeklyTotalCell.classList.add('weekly-total-cell');
                         const weeklyTotalsDiv = document.createElement('div');
@@ -1615,15 +1680,12 @@
                         weeklyTotalCell.appendChild(weeklyTotalsDiv);
                         calendarElement.appendChild(weeklyTotalCell);
 
-                        // reset week
                         weekDay = 0;
                         weeklyData = { income: 0, expense: 0 };
                     }
 
                     currentDay++;
                 }
-
-                // 남은 칸은 주간합계 셀로 인해 정확히 맞출 수 있음(주단위로 끊기 때문에 추가 빈칸 불필요)
             };
 
             const renderMonthlyTotals = (year, month) => {
