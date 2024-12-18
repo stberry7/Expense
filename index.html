@@ -1,0 +1,1653 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>예산 추적기</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            display: flex;
+        }
+        header {
+            background: #007bff;
+            color: #fff;
+            padding: 15px;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            left: 200px; /* 사이드 메뉴 너비 */
+            right: 0;
+            height: 60px;
+            line-height: 30px;
+            z-index: 1000;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 80px auto 20px auto; /* 헤더 높이 및 사이드 메뉴 너비 만큼 여백 */
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            flex: 1;
+        }
+        form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input[type="text"], input[type="number"], select, input[type="date"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .budget-list {
+            margin-top: 20px;
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+            position: relative;
+        }
+        th {
+            cursor: pointer;
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #f1f1f1;
+        }
+        .total {
+            margin-top: 20px;
+            font-weight: bold;
+            text-align: right;
+        }
+        .actions button {
+            background-color: #ff4d4d;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 5px;
+        }
+        .actions button.edit {
+            background-color: #007bff;
+        }
+        .actions button.edit:hover {
+            background-color: #0056b3;
+        }
+        .filters, .csv-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .filters select, .filters input[type="date"],
+        .csv-buttons button {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        #csv-file {
+            display: none;
+        }
+        /* 사이드 메뉴 스타일 */
+        .side-menu {
+            width: 200px;
+            background-color: #343a40;
+            color: #fff;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            padding-top: 60px; /* 헤더 높이 만큼 여백 */
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        .side-menu button {
+            width: 100%;
+            padding: 15px;
+            background: none;
+            border: none;
+            color: #fff;
+            text-align: left;
+            cursor: pointer;
+            border-bottom: 1px solid #495057;
+            font-size: 1em;
+        }
+        .side-menu button:hover {
+            background-color: #495057;
+        }
+        .hidden {
+            display: none;
+        }
+        /* 계산기 스타일 */
+        .calculator-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            align-items: start;
+        }
+        .calculator {
+            max-width: 320px;
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .calculator h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .calculator-input {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+            text-align: right;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: #e9ecef;
+        }
+        .calculator-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .calculator-buttons button {
+            padding: 15px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #e0e0e0;
+            transition: background-color 0.3s;
+        }
+        .calculator-buttons button:hover {
+            background-color: #d5d5d5;
+        }
+        .calculator-buttons button.operator {
+            background-color: #ffa500;
+            color: #fff;
+        }
+        .calculator-buttons button.operator:hover {
+            background-color: #e69500;
+        }
+        .calculator-buttons button.equal {
+            background-color: #28a745;
+            color: #fff;
+            grid-column: span 2;
+        }
+        .calculator-buttons button.equal:hover {
+            background-color: #218838;
+        }
+        .calculator-buttons button.clear {
+            background-color: #dc3545;
+            color: #fff;
+            grid-column: span 2;
+        }
+        .calculator-buttons button.clear:hover {
+            background-color: #c82333;
+        }
+        /* 계산 히스토리 */
+        .calculator-history {
+            max-width: 200px;
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow-y: auto;
+            max-height: 400px;
+        }
+        .calculator-history h3 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+        .history-item span {
+            flex: 1;
+        }
+        .history-item button {
+            background-color: #dc3545;
+            border: none;
+            color: #fff;
+            padding: 3px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        /* 관리 화면 스타일 */
+        .manage-screen {
+            max-width: 600px;
+            margin: 20px auto;
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .manage-screen h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .manage-screen form {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .manage-screen form input[type="text"] {
+            flex: 1;
+        }
+        .manage-screen ul {
+            list-style: none;
+            padding: 0;
+        }
+        .manage-screen li {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #fff;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .manage-screen li button {
+            background-color: #dc3545;
+            color: #fff;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .manage-screen li button:hover {
+            background-color: #c82333;
+        }
+        /* 데이터 분석 화면 스타일 */
+        .data-analysis-screen {
+            max-width: 800px;
+            margin: 20px auto;
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .data-analysis-screen h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .data-analysis-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .data-analysis-screen select {
+            width: 200px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        .data-analysis-screen button {
+            display: block;
+            margin: 0 auto 20px auto;
+        }
+        /* 토글 버튼 스타일 */
+        .toggle-button {
+            padding: 5px 10px;
+            border: none;
+            background-color: #6c757d;
+            color: #fff;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+        .toggle-button:hover {
+            background-color: #5a6268;
+        }
+        /* 설정 화면 스타일 */
+        .settings-screen {
+            max-width: 400px;
+            margin: 20px auto;
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .settings-screen h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .settings-screen form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .settings-screen label {
+            font-weight: bold;
+        }
+        /* 전체항목 화면 스타일 */
+        .all-items-screen {
+            max-width: 1000px;
+            margin: 20px auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+        .all-items-screen h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .all-items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .all-items-table th, .all-items-table td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+        .all-items-table th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+        }
+        .all-items-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        .all-items-filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        /* 칼렌더 분석 화면 스타일 (8열) */
+        .calendar-analysis-screen {
+            max-width: 800px;
+            margin: 20px auto;
+            background: #f7f7f7;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .calendar-analysis-screen h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .monthly-totals {
+            position: absolute;
+            right: 0;
+            top: 0;
+            font-size: 0.8em;
+            color: #333;
+        }
+        #calendar-container {
+            margin-bottom: 20px;
+        }
+        #calendar-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 10px;
+        }
+        #calendar-header button {
+            background-color: #007bff;
+            border: none;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        #calendar-header button:hover {
+            background-color: #0056b3;
+        }
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr); /* 7일 + 1열(주간합계) */
+            gap: 5px;
+        }
+        .calendar .day-header {
+            background-color: #e9ecef;
+            text-align: center;
+            font-weight: bold;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+        }
+        .calendar .day {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            position: relative;
+            min-height: 100px;
+        }
+        .calendar .weekly-total-cell {
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            min-height: 100px;
+            position: relative;
+        }
+        .calendar .income {
+            font-size: 0.9em;
+            color: blue;
+        }
+        .calendar .expense {
+            font-size: 0.9em;
+            color: red;
+        }
+        .calendar .weekly-totals {
+            background-color: #f1f1f1;
+            border-top: 1px solid #ccc;
+            padding-top: 5px;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+        .calendar .date-number {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 0.8em;
+            color: #666;
+        }
+        @media (max-width: 768px) {
+            .side-menu {
+                width: 150px;
+            }
+            header {
+                left: 150px;
+            }
+            .calendar .day {
+                min-height: 80px;
+            }
+        }
+    </style>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- 사이드 메뉴 -->
+    <div class="side-menu">
+        <button id="go-main">가계부 등록</button>
+        <button id="manage-income">수입항목 관리</button>
+        <button id="manage-expense">지출항목 관리</button>
+        <button id="calculator">계산기</button>
+        <button id="data-analysis">데이터 분석</button>
+        <button id="calendar-analysis">칼렌더 분석</button>
+        <button id="settings">선택항목</button>
+        <button id="all-items">전체항목</button>
+    </div>
+
+    <header>
+        <h1>예산 추적기</h1>
+    </header>
+    <div class="container">
+        <!-- 메인 화면 -->
+        <div id="main-screen">
+            <form id="budget-form">
+                <select id="type" required>
+                    <option value="수입">수입</option>
+                    <option value="지출">지출</option>
+                </select>
+                <input type="date" id="date" value="" required>
+                <select id="category"></select>
+                <input type="text" id="description" placeholder="설명" required>
+                <input type="number" id="amount" placeholder="금액" required>
+                <button type="submit">추가</button>
+                <button type="button" id="reset-main" style="background-color: #dc3545;">초기화</button>
+            </form>
+
+            <!-- 필터 토글 버튼 -->
+            <button id="toggle-filters" class="toggle-button">필터 보기</button>
+            <div class="filters hidden" id="filters-section">
+                <select id="filter-category">
+                    <option value="모두">모두</option>
+                    <option value="수입">수입</option>
+                    <option value="지출">지출</option>
+                    <option value="식비">식비</option>
+                    <option value="교통비">교통비</option>
+                    <option value="엔터테인먼트">엔터테인먼트</option>
+                    <option value="기타">기타</option>
+                </select>
+                <input type="date" id="filter-start-date" placeholder="시작 날짜">
+                <input type="date" id="filter-end-date" placeholder="종료 날짜">
+                <button type="button" id="clear-filters">필터 초기화</button>
+            </div>
+
+            <!-- CSV 버튼 토글 버튼 -->
+            <button id="toggle-csv-buttons" class="toggle-button">CSV 버튼 보기</button>
+            <div class="csv-buttons hidden" id="csv-buttons-section">
+                <button id="export-csv">CSV 내보내기</button>
+                <button class="import" id="import-csv">CSV 가져오기</button>
+                <input type="file" id="csv-file" accept=".csv">
+            </div>
+
+            <div class="budget-list">
+                <table id="budget-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="number">번호</th>
+                            <th data-sort="date">날짜</th>
+                            <th data-sort="type">유형</th>
+                            <th data-sort="category">카테고리</th>
+                            <th data-sort="description">설명</th>
+                            <th data-sort="amount">금액</th>
+                            <th>액션</th>
+                        </tr>
+                    </thead>
+                    <tbody id="budget-list-body"></tbody>
+                </table>
+            </div>
+
+            <div class="total" id="total">총합: ₩0</div>
+            <div class="total" id="income-total" style="color: blue;">총 수입: ₩0</div>
+            <div class="total" id="expense-total" style="color: red;">총 지출: ₩0</div>
+        </div>
+
+        <!-- 수입항목 관리 화면 -->
+        <div id="manage-income-screen" class="hidden">
+            <div class="manage-screen">
+                <h2>수입항목 관리</h2>
+                <form id="income-category-form">
+                    <input type="text" id="income-category-input" placeholder="수입 항목" required>
+                    <button type="submit">추가</button>
+                </form>
+                <ul id="income-category-list"></ul>
+                <button id="back-main-from-income">돌아가기</button>
+            </div>
+        </div>
+
+        <!-- 지출항목 관리 화면 -->
+        <div id="manage-expense-screen" class="hidden">
+            <div class="manage-screen">
+                <h2>지출항목 관리</h2>
+                <form id="expense-category-form">
+                    <input type="text" id="expense-category-input" placeholder="지출 항목" required>
+                    <button type="submit">추가</button>
+                </form>
+                <ul id="expense-category-list"></ul>
+                <button id="back-main-from-expense">돌아가기</button>
+            </div>
+        </div>
+
+        <!-- 계산기 화면 -->
+        <div id="calculator-screen" class="hidden">
+            <div class="calculator-container">
+                <div class="calculator">
+                    <h2>계산기</h2>
+                    <input type="text" id="calc-display" class="calculator-input" disabled>
+                    <div class="calculator-buttons">
+                        <button data-value="7">7</button>
+                        <button data-value="8">8</button>
+                        <button data-value="9">9</button>
+                        <button class="operator" data-value="/">/</button>
+
+                        <button data-value="4">4</button>
+                        <button data-value="5">5</button>
+                        <button data-value="6">6</button>
+                        <button class="operator" data-value="*">*</button>
+
+                        <button data-value="1">1</button>
+                        <button data-value="2">2</button>
+                        <button data-value="3">3</button>
+                        <button class="operator" data-value="-">-</button>
+
+                        <button data-value="0">0</button>
+                        <button data-value=".">.</button>
+                        <button class="equal" data-action="calculate">=</button>
+                        <button class="operator" data-value="+">+</button>
+
+                        <button class="clear" data-action="clear">C</button>
+                    </div>
+                    <button id="back-main-from-calculator" style="display:block; margin: 10px auto;">돌아가기</button>
+                </div>
+                <div class="calculator-history">
+                    <h3>히스토리</h3>
+                    <div id="history-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 데이터 분석 화면 -->
+        <div id="data-analysis-screen" class="hidden">
+            <div class="data-analysis-screen">
+                <h2>데이터 분석</h2>
+                <div class="data-analysis-controls">
+                    <select id="analysis-type">
+                        <option value="수입">수입</option>
+                        <option value="지출">지출</option>
+                    </select>
+                    <select id="analysis-period">
+                        <option value="전체">전체</option>
+                        <option value="일별">일별</option>
+                        <option value="주간별">주간별</option>
+                        <option value="월별">월별</option>
+                        <option value="년별">년별</option>
+                    </select>
+                </div>
+                <canvas id="data-analysis-chart"></canvas>
+                <button id="back-main-from-data-analysis">돌아가기</button>
+            </div>
+        </div>
+
+        <!-- 칼렌더 분석 화면 -->
+        <div id="calendar-analysis-screen" class="hidden">
+            <div class="calendar-analysis-screen">
+                <h2>칼렌더 분석
+                    <span class="monthly-totals" id="monthly-totals"></span>
+                </h2>
+                <div id="calendar-container">
+                    <div id="calendar-header">
+                        <button id="prev-month">&lt;</button>
+                        <span id="current-month-year"></span>
+                        <button id="next-month">&gt;</button>
+                    </div>
+                    <div class="calendar" id="calendar"></div>
+                </div>
+                <button id="back-main-from-calendar-analysis">돌아가기</button>
+            </div>
+        </div>
+
+        <!-- 설정 화면 (통화 선택) -->
+        <div id="settings-screen" class="hidden">
+            <div class="settings-screen">
+                <h2>선택항목</h2>
+                <form id="settings-form">
+                    <label for="currency">통화:</label>
+                    <select id="currency" required>
+                        <option value="원">원</option>
+                        <option value="달러">달러</option>
+                    </select>
+                    <button type="submit">저장</button>
+                </form>
+                <button id="back-main-from-settings">돌아가기</button>
+            </div>
+        </div>
+
+        <!-- 전체항목 화면 -->
+        <div id="all-items-screen" class="hidden">
+            <div class="all-items-screen">
+                <h2>전체항목</h2>
+                <!-- 전체항목 필터 섹션 -->
+                <div class="all-items-filters">
+                    <select id="all-items-filter-category">
+                        <option value="모두">모두</option>
+                        <option value="수입">수입</option>
+                        <option value="지출">지출</option>
+                    </select>
+                    <input type="date" id="all-items-filter-start-date">
+                    <input type="date" id="all-items-filter-end-date">
+                    <button type="button" id="all-items-filter-clear">필터 초기화</button>
+                </div>
+                <table class="all-items-table">
+                    <thead>
+                        <tr>
+                            <th data-sort="number">번호</th>
+                            <th data-sort="date">날짜</th>
+                            <th data-sort="type">유형</th>
+                            <th data-sort="category">카테고리</th>
+                            <th data-sort="description">설명</th>
+                            <th data-sort="amount">금액</th>
+                        </tr>
+                    </thead>
+                    <tbody id="all-items-body"></tbody>
+                </table>
+                <button id="back-main-from-all-items">돌아가기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 요소 선택
+            const form = document.getElementById('budget-form');
+            const budgetListBody = document.getElementById('budget-list-body');
+            const totalDisplay = document.getElementById('total');
+            const incomeTotalDisplay = document.getElementById('income-total');
+            const expenseTotalDisplay = document.getElementById('expense-total');
+            const dateInput = document.getElementById('date');
+            const filterCategory = document.getElementById('filter-category');
+            const filterStartDate = document.getElementById('filter-start-date');
+            const filterEndDate = document.getElementById('filter-end-date');
+            const clearFiltersBtn = document.getElementById('clear-filters');
+            const exportCsvBtn = document.getElementById('export-csv');
+            const importCsvBtn = document.getElementById('import-csv');
+            const csvFileInput = document.getElementById('csv-file');
+            const tableHeaders = document.querySelectorAll('#budget-table th[data-sort]');
+            const typeSelect = document.getElementById('type');
+            const categorySelect = document.getElementById('category');
+
+            // 사이드 메뉴 버튼
+            const goMainBtn = document.getElementById('go-main');
+            const manageIncomeBtn = document.getElementById('manage-income');
+            const manageExpenseBtn = document.getElementById('manage-expense');
+            const calculatorBtn = document.getElementById('calculator');
+            const dataAnalysisBtn = document.getElementById('data-analysis');
+            const calendarAnalysisBtn = document.getElementById('calendar-analysis');
+            const settingsBtn = document.getElementById('settings');
+            const allItemsBtn = document.getElementById('all-items');
+
+            // 추가 화면 요소
+            const mainScreen = document.getElementById('main-screen');
+            const manageIncomeScreen = document.getElementById('manage-income-screen');
+            const manageExpenseScreen = document.getElementById('manage-expense-screen');
+            const calculatorScreen = document.getElementById('calculator-screen');
+            const dataAnalysisScreen = document.getElementById('data-analysis-screen');
+            const calendarAnalysisScreen = document.getElementById('calendar-analysis-screen');
+            const settingsScreen = document.getElementById('settings-screen');
+            const allItemsScreen = document.getElementById('all-items-screen');
+
+            // 관리 화면 버튼
+            const backFromIncomeBtn = document.getElementById('back-main-from-income');
+            const backFromExpenseBtn = document.getElementById('back-main-from-expense');
+            const backFromCalculatorBtn = document.getElementById('back-main-from-calculator');
+            const backFromDataAnalysisBtn = document.getElementById('back-main-from-data-analysis');
+            const backFromCalendarAnalysisBtn = document.getElementById('back-main-from-calendar-analysis');
+            const backFromSettingsBtn = document.getElementById('back-main-from-settings');
+            const backFromAllItemsBtn = document.getElementById('back-main-from-all-items');
+
+            // 카테고리 관리 요소
+            const incomeCategoryForm = document.getElementById('income-category-form');
+            const incomeCategoryInput = document.getElementById('income-category-input');
+            const incomeCategoryList = document.getElementById('income-category-list');
+
+            const expenseCategoryForm = document.getElementById('expense-category-form');
+            const expenseCategoryInput = document.getElementById('expense-category-input');
+            const expenseCategoryList = document.getElementById('expense-category-list');
+
+            // 데이터 분석 요소
+            const analysisTypeSelect = document.getElementById('analysis-type');
+            const analysisPeriodSelect = document.getElementById('analysis-period');
+            const dataAnalysisChartCtx = document.getElementById('data-analysis-chart').getContext('2d');
+            let dataAnalysisChartInstance;
+
+            // 칼렌더 분석 요소
+            const currentMonthYear = document.getElementById('current-month-year');
+            const calendarElement = document.getElementById('calendar');
+            const prevMonthBtn = document.getElementById('prev-month');
+            const nextMonthBtn = document.getElementById('next-month');
+            const monthlyTotals = document.getElementById('monthly-totals');
+            let currentCalendarDate = new Date();
+
+            // 필터 및 CSV 버튼 토글 요소
+            const toggleFiltersBtn = document.getElementById('toggle-filters');
+            const filtersSection = document.getElementById('filters-section');
+            const toggleCsvButtonsBtn = document.getElementById('toggle-csv-buttons');
+            const csvButtonsSection = document.getElementById('csv-buttons-section');
+
+            // 설정 화면 요소
+            const settingsForm = document.getElementById('settings-form');
+            const currencySelect = document.getElementById('currency');
+
+            // 전체항목 화면 요소
+            const allItemsBody = document.getElementById('all-items-body');
+            const allItemsFilterCategory = document.getElementById('all-items-filter-category');
+            const allItemsFilterStartDate = document.getElementById('all-items-filter-start-date');
+            const allItemsFilterEndDate = document.getElementById('all-items-filter-end-date');
+            const allItemsFilterClearBtn = document.getElementById('all-items-filter-clear');
+            const allItemsHeaders = document.querySelectorAll('.all-items-table th[data-sort]');
+
+            // 초기화 버튼
+            const resetMainBtn = document.getElementById('reset-main');
+
+            // 계산기
+            const calcDisplay = document.getElementById('calc-display');
+            const calculatorButtons = document.querySelectorAll('.calculator-buttons button');
+            const historyList = document.getElementById('history-list');
+
+            // 초기 데이터
+            let budgetData = [];
+            let incomeCategories = ['급여', '이자', '기타 수입'];
+            let expenseCategories = ['식비', '교통비', '엔터테인먼트', '기타'];
+            let editIndex = null;
+            let currentSort = { key: null, order: 'asc' };
+            let currentCurrency = localStorage.getItem('currency') || '원';
+            let hiddenIndicesMainScreen = [];
+            let allItemsSort = { key: null, order: 'asc' };
+
+            // History array for calculator
+            let calcHistory = [];
+
+            // Set default date
+            dateInput.value = new Date().toISOString().split('T')[0];
+
+            // Save data to localStorage
+            const saveData = () => {
+                localStorage.setItem('budgetData', JSON.stringify(budgetData));
+                localStorage.setItem('incomeCategories', JSON.stringify(incomeCategories));
+                localStorage.setItem('expenseCategories', JSON.stringify(expenseCategories));
+                localStorage.setItem('currency', currentCurrency);
+            };
+
+            // Load data from localStorage
+            const loadData = () => {
+                const data = JSON.parse(localStorage.getItem('budgetData')) || [];
+                budgetData = data;
+
+                const incomeCats = JSON.parse(localStorage.getItem('incomeCategories'));
+                if (incomeCats && Array.isArray(incomeCats)) {
+                    incomeCategories = incomeCats;
+                }
+
+                const expenseCats = JSON.parse(localStorage.getItem('expenseCategories'));
+                if (expenseCats && Array.isArray(expenseCats)) {
+                    expenseCategories = expenseCats;
+                }
+
+                currentCurrency = localStorage.getItem('currency') || '원';
+                renderCategories();
+                renderList();
+                renderAllItems();
+            };
+
+            // Currency symbol
+            const getCurrencySymbol = () => {
+                return currentCurrency === '달러' ? '$' : '₩';
+            };
+
+            // Format currency
+            const formatCurrency = (amount) => {
+                const symbol = getCurrencySymbol();
+                return `${symbol}${amount.toLocaleString('ko-KR')}`;
+            };
+
+            // Render categories in main form
+            const renderCategories = () => {
+                categorySelect.innerHTML = '';
+                const type = typeSelect.value;
+                const categories = type === '수입' ? incomeCategories : expenseCategories;
+                categories.forEach(cat => {
+                    const option = document.createElement('option');
+                    option.value = cat;
+                    option.textContent = cat;
+                    categorySelect.appendChild(option);
+                });
+            };
+
+            // Render main list
+            const renderList = () => {
+                let filteredData = budgetData.filter((item, index) => !hiddenIndicesMainScreen.includes(index));
+
+                const categoryFilter = filterCategory.value;
+                const startDate = filterStartDate.value;
+                const endDate = filterEndDate.value;
+
+                if (categoryFilter !== '모두') {
+                    filteredData = filteredData.filter(item => {
+                        return item.category === categoryFilter || item.type === categoryFilter;
+                    });
+                }
+                if (startDate) {
+                    filteredData = filteredData.filter(item => item.date >= startDate);
+                }
+                if (endDate) {
+                    filteredData = filteredData.filter(item => item.date <= endDate);
+                }
+
+                // Sorting
+                if (currentSort.key) {
+                    filteredData.sort((a, b) => sortData(a, b, currentSort));
+                }
+
+                // Render table
+                budgetListBody.innerHTML = '';
+                let total = 0;
+                let incomeTotal = 0;
+                let expenseTotal = 0;
+
+                filteredData.forEach(item => {
+                    const actualIndex = budgetData.indexOf(item);
+                    const row = document.createElement('tr');
+
+                    const numberCell = document.createElement('td');
+                    numberCell.textContent = actualIndex + 1;
+                    row.appendChild(numberCell);
+
+                    const dateCell = document.createElement('td');
+                    dateCell.textContent = item.date;
+                    row.appendChild(dateCell);
+
+                    const typeCell = document.createElement('td');
+                    typeCell.textContent = item.type;
+                    row.appendChild(typeCell);
+
+                    const categoryCell = document.createElement('td');
+                    categoryCell.textContent = item.category;
+                    row.appendChild(categoryCell);
+
+                    const descriptionCell = document.createElement('td');
+                    descriptionCell.textContent = item.description;
+                    row.appendChild(descriptionCell);
+
+                    const amountCell = document.createElement('td');
+                    amountCell.textContent = formatCurrency(item.amount);
+                    amountCell.style.color = item.type === '수입' ? 'blue' : 'red';
+                    row.appendChild(amountCell);
+
+                    const actionsCell = document.createElement('td');
+                    actionsCell.classList.add('actions');
+                    const editBtn = document.createElement('button');
+                    editBtn.textContent = '수정';
+                    editBtn.classList.add('edit');
+                    editBtn.onclick = () => editItem(actualIndex);
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '삭제';
+                    deleteBtn.onclick = () => deleteItem(actualIndex);
+                    actionsCell.appendChild(editBtn);
+                    actionsCell.appendChild(deleteBtn);
+                    row.appendChild(actionsCell);
+
+                    budgetListBody.appendChild(row);
+
+                    total += item.amount;
+                    if (item.type === '수입') {
+                        incomeTotal += item.amount;
+                    } else {
+                        expenseTotal += item.amount;
+                    }
+                });
+
+                totalDisplay.textContent = `총합: ${formatCurrency(total)}`;
+                incomeTotalDisplay.textContent = `총 수입: ${formatCurrency(incomeTotal)}`;
+                expenseTotalDisplay.textContent = `총 지출: ${formatCurrency(expenseTotal)}`;
+            };
+
+            // Render all items with sorting and filtering
+            const renderAllItems = () => {
+                let filtered = [...budgetData];
+
+                const catFilter = allItemsFilterCategory.value;
+                const start = allItemsFilterStartDate.value;
+                const end = allItemsFilterEndDate.value;
+
+                if (catFilter !== '모두') {
+                    filtered = filtered.filter(item => item.type === catFilter);
+                }
+                if (start) {
+                    filtered = filtered.filter(item => item.date >= start);
+                }
+                if (end) {
+                    filtered = filtered.filter(item => item.date <= end);
+                }
+
+                if (allItemsSort.key) {
+                    filtered.sort((a, b) => sortData(a, b, allItemsSort));
+                }
+
+                allItemsBody.innerHTML = '';
+                filtered.forEach((item, index) => {
+                    const originalIndex = budgetData.indexOf(item);
+                    const row = document.createElement('tr');
+
+                    const numberCell = document.createElement('td');
+                    numberCell.textContent = originalIndex + 1;
+                    row.appendChild(numberCell);
+
+                    const dateCell = document.createElement('td');
+                    dateCell.textContent = item.date;
+                    row.appendChild(dateCell);
+
+                    const typeCell = document.createElement('td');
+                    typeCell.textContent = item.type;
+                    row.appendChild(typeCell);
+
+                    const categoryCell = document.createElement('td');
+                    categoryCell.textContent = item.category;
+                    row.appendChild(categoryCell);
+
+                    const descriptionCell = document.createElement('td');
+                    descriptionCell.textContent = item.description;
+                    row.appendChild(descriptionCell);
+
+                    const amountCell = document.createElement('td');
+                    amountCell.textContent = formatCurrency(item.amount);
+                    amountCell.style.color = item.type === '수입' ? 'blue' : 'red';
+                    row.appendChild(amountCell);
+
+                    allItemsBody.appendChild(row);
+                });
+            };
+
+            const sortData = (a, b, sortConfig) => {
+                let aValue = a[sortConfig.key];
+                let bValue = b[sortConfig.key];
+
+                if (sortConfig.key === 'amount' || sortConfig.key === 'number') {
+                    aValue = Number(aValue);
+                    bValue = Number(bValue);
+                }
+                if (sortConfig.key === 'date') {
+                    aValue = new Date(aValue);
+                    bValue = new Date(bValue);
+                }
+
+                if (aValue < bValue) return sortConfig.order === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.order === 'asc' ? 1 : -1;
+                return 0;
+            };
+
+            const editItem = (index) => {
+                const item = budgetData[index];
+                typeSelect.value = item.type;
+                renderCategories();
+                categorySelect.value = item.category;
+                dateInput.value = item.date;
+                document.getElementById('description').value = item.description;
+                document.getElementById('amount').value = item.amount;
+                editIndex = index;
+            };
+
+            const deleteItem = (index) => {
+                if (confirm('해당 항목을 삭제하시겠습니까?')) {
+                    budgetData.splice(index, 1);
+                    hiddenIndicesMainScreen = hiddenIndicesMainScreen.filter(i => i !== index);
+                    saveData();
+                    renderList();
+                    renderAllItems();
+                    renderCalendar(currentCalendarDate);
+                }
+            };
+
+            // Form submit
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+
+                const type = typeSelect.value;
+                const date = document.getElementById('date').value;
+                const description = document.getElementById('description').value.trim();
+                const amount = parseFloat(document.getElementById('amount').value);
+                const category = document.getElementById('category').value;
+
+                if (description && !isNaN(amount)) {
+                    if (editIndex !== null) {
+                        budgetData[editIndex] = { type, date, category, description, amount };
+                        editIndex = null;
+                    } else {
+                        budgetData.push({ type, date, category, description, amount });
+                    }
+
+                    saveData();
+                    renderList();
+                    renderAllItems();
+                    form.reset();
+                    typeSelect.value = '수입';
+                    renderCategories();
+                    dateInput.value = new Date().toISOString().split('T')[0];
+                }
+            });
+
+            // Sorting main screen
+            tableHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    const sortKey = header.getAttribute('data-sort');
+                    if (currentSort.key === sortKey) {
+                        currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        currentSort.key = sortKey;
+                        currentSort.order = 'asc';
+                    }
+                    renderList();
+                });
+            });
+
+            // Sorting all items screen
+            allItemsHeaders.forEach(header => {
+                header.addEventListener('click', () => {
+                    const sortKey = header.getAttribute('data-sort');
+                    if (allItemsSort.key === sortKey) {
+                        allItemsSort.order = allItemsSort.order === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        allItemsSort.key = sortKey;
+                        allItemsSort.order = 'asc';
+                    }
+                    renderAllItems();
+                });
+            });
+
+            typeSelect.addEventListener('change', renderCategories);
+
+            // Filters main
+            filterCategory.addEventListener('change', renderList);
+            filterStartDate.addEventListener('change', renderList);
+            filterEndDate.addEventListener('change', renderList);
+            clearFiltersBtn.addEventListener('click', () => {
+                filterCategory.value = '모두';
+                filterStartDate.value = '';
+                filterEndDate.value = '';
+                renderList();
+            });
+
+            // Filters all items
+            allItemsFilterCategory.addEventListener('change', renderAllItems);
+            allItemsFilterStartDate.addEventListener('change', renderAllItems);
+            allItemsFilterEndDate.addEventListener('change', renderAllItems);
+            allItemsFilterClearBtn.addEventListener('click', () => {
+                allItemsFilterCategory.value = '모두';
+                allItemsFilterStartDate.value = '';
+                allItemsFilterEndDate.value = '';
+                renderAllItems();
+            });
+
+            // CSV export
+            exportCsvBtn.addEventListener('click', () => {
+                let csvContent = "\uFEFF유형,날짜,카테고리,설명,금액\r\n";
+                budgetData.forEach(item => {
+                    const row = `"${item.type}","${item.date}","${item.category}","${item.description}",${item.amount}`;
+                    csvContent += row + "\r\n";
+                });
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", "budget_data.csv");
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+
+            // CSV import
+            importCsvBtn.addEventListener('click', () => {
+                csvFileInput.click();
+            });
+
+            csvFileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const text = e.target.result;
+                    const lines = text.split('\n').filter(line => line.trim() !== '');
+                    const newData = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        const parts = line.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g);
+                        if (!parts || parts.length < 5) continue;
+                        const [type, date, category, description, amount] = parts.map(p => p.replace(/^"|"$/g, '').trim());
+                        newData.push({ type, date, category, description, amount: parseFloat(amount) });
+                    }
+                    budgetData = newData;
+                    hiddenIndicesMainScreen = [];
+                    saveData();
+                    renderList();
+                    renderAllItems();
+                    renderCalendar(currentCalendarDate);
+                };
+                reader.readAsText(file);
+                csvFileInput.value = '';
+            });
+
+            loadData();
+
+            // Manage Income Categories
+            const renderIncomeCategoriesList = () => {
+                incomeCategoryList.innerHTML = '';
+                incomeCategories.forEach((cat, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = cat;
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '삭제';
+                    deleteBtn.onclick = () => {
+                        if (confirm(`"${cat}" 항목을 삭제하시겠습니까?`)) {
+                            incomeCategories.splice(index, 1);
+                            saveData();
+                            renderCategories();
+                            renderIncomeCategoriesList();
+                            renderList();
+                            renderAllItems();
+                            renderCalendar(currentCalendarDate);
+                        }
+                    };
+                    li.appendChild(deleteBtn);
+                    incomeCategoryList.appendChild(li);
+                });
+            };
+
+            incomeCategoryForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const category = incomeCategoryInput.value.trim();
+                if (category && !incomeCategories.includes(category)) {
+                    incomeCategories.push(category);
+                    saveData();
+                    renderCategories();
+                    renderIncomeCategoriesList();
+                    incomeCategoryForm.reset();
+                }
+            });
+
+            // Manage Expense Categories
+            const renderExpenseCategoriesList = () => {
+                expenseCategoryList.innerHTML = '';
+                expenseCategories.forEach((cat, index) => {
+                    const li = document.createElement('li');
+                    li.textContent = cat;
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = '삭제';
+                    deleteBtn.onclick = () => {
+                        if (confirm(`"${cat}" 항목을 삭제하시겠습니까?`)) {
+                            expenseCategories.splice(index, 1);
+                            saveData();
+                            renderCategories();
+                            renderExpenseCategoriesList();
+                            renderList();
+                            renderAllItems();
+                            renderCalendar(currentCalendarDate);
+                        }
+                    };
+                    li.appendChild(deleteBtn);
+                    expenseCategoryList.appendChild(li);
+                });
+            };
+
+            expenseCategoryForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const category = expenseCategoryInput.value.trim();
+                if (category && !expenseCategories.includes(category)) {
+                    expenseCategories.push(category);
+                    saveData();
+                    renderCategories();
+                    renderExpenseCategoriesList();
+                    expenseCategoryForm.reset();
+                }
+            });
+
+            // Show screens
+            const showScreen = (screen) => {
+                [mainScreen, manageIncomeScreen, manageExpenseScreen, calculatorScreen, dataAnalysisScreen, calendarAnalysisScreen, settingsScreen, allItemsScreen].forEach(s => {
+                    s.classList.add('hidden');
+                });
+                screen.classList.remove('hidden');
+            };
+
+            goMainBtn.addEventListener('click', () => showScreen(mainScreen));
+            manageIncomeBtn.addEventListener('click', () => {
+                renderIncomeCategoriesList();
+                showScreen(manageIncomeScreen);
+            });
+            manageExpenseBtn.addEventListener('click', () => {
+                renderExpenseCategoriesList();
+                showScreen(manageExpenseScreen);
+            });
+            calculatorBtn.addEventListener('click', () => showScreen(calculatorScreen));
+            dataAnalysisBtn.addEventListener('click', () => {
+                renderDataAnalysisChart();
+                showScreen(dataAnalysisScreen);
+            });
+            calendarAnalysisBtn.addEventListener('click', () => {
+                renderCalendar(currentCalendarDate);
+                showScreen(calendarAnalysisScreen);
+            });
+            settingsBtn.addEventListener('click', () => {
+                currencySelect.value = currentCurrency;
+                showScreen(settingsScreen);
+            });
+            allItemsBtn.addEventListener('click', () => {
+                renderAllItems();
+                showScreen(allItemsScreen);
+            });
+
+            backFromIncomeBtn.addEventListener('click', () => showScreen(mainScreen));
+            backFromExpenseBtn.addEventListener('click', () => showScreen(mainScreen));
+            backFromCalculatorBtn.addEventListener('click', () => showScreen(mainScreen));
+            backFromDataAnalysisBtn.addEventListener('click', () => showScreen(mainScreen));
+            backFromCalendarAnalysisBtn.addEventListener('click', () => showScreen(mainScreen));
+            backFromSettingsBtn.addEventListener('click', () => showScreen(mainScreen));
+            backFromAllItemsBtn.addEventListener('click', () => showScreen(mainScreen));
+
+            // Calculator
+            calculatorButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const value = button.getAttribute('data-value');
+                    const action = button.getAttribute('data-action');
+
+                    if (action === 'calculate') {
+                        calculateResult();
+                    } else if (action === 'clear') {
+                        clearCalculator();
+                    } else {
+                        inputCalculator(value);
+                    }
+                });
+            });
+
+            const inputCalculator = (value) => {
+                const operators = ['+', '-', '*', '/'];
+                const lastChar = calcDisplay.value.slice(-1);
+
+                if (operators.includes(value)) {
+                    if (calcDisplay.value === '' || operators.includes(lastChar)) {
+                        return;
+                    }
+                }
+
+                if (value === '.') {
+                    const parts = calcDisplay.value.split(/[\+\-\*\/]/);
+                    const lastPart = parts[parts.length - 1];
+                    if (lastPart.includes('.')) {
+                        return;
+                    }
+                }
+
+                calcDisplay.value += value;
+            };
+
+            const calculateResult = () => {
+                const expression = calcDisplay.value;
+                if (expression === '') return;
+
+                try {
+                    if (!/^[0-9+\-*/.() ]+$/.test(expression)) {
+                        throw new Error('Invalid characters in expression');
+                    }
+                    const result = Function('"use strict";return (' + expression + ')')();
+                    if (isNaN(result) || !isFinite(result)) {
+                        throw new Error('Invalid calculation');
+                    }
+                    addHistory(expression, result);
+                    calcDisplay.value = result;
+                } catch (error) {
+                    alert('잘못된 수식입니다.');
+                    clearCalculator();
+                }
+            };
+
+            const clearCalculator = () => {
+                calcDisplay.value = '';
+            };
+
+            const addHistory = (expr, result) => {
+                const historyItem = { expr, result };
+                calcHistory.push(historyItem);
+                renderHistory();
+            };
+
+            const renderHistory = () => {
+                historyList.innerHTML = '';
+                calcHistory.forEach((item, index) => {
+                    const div = document.createElement('div');
+                    div.classList.add('history-item');
+                    const span = document.createElement('span');
+                    span.textContent = `${item.expr} = ${item.result}`;
+                    const delBtn = document.createElement('button');
+                    delBtn.textContent = '삭제';
+                    delBtn.addEventListener('click', () => {
+                        calcHistory.splice(index, 1);
+                        renderHistory();
+                    });
+                    div.appendChild(span);
+                    div.appendChild(delBtn);
+                    historyList.appendChild(div);
+                });
+            };
+
+            // Data Analysis Chart
+            const renderDataAnalysisChart = () => {
+                const type = analysisTypeSelect.value;
+                const period = analysisPeriodSelect.value;
+                const groupedData = groupDataByPeriod(type, period);
+                const labels = Object.keys(groupedData);
+                const data = Object.values(groupedData);
+
+                if (dataAnalysisChartInstance) {
+                    dataAnalysisChartInstance.destroy();
+                }
+
+                dataAnalysisChartInstance = new Chart(dataAnalysisChartCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: `${type} 분석 (${getCurrencySymbol()})`,
+                            data: data,
+                            backgroundColor: type === '수입' ? 'rgba(54, 162, 235, 0.7)' : 'rgba(255, 99, 132, 0.7)',
+                            borderColor: type === '수입' ? 'rgba(54, 162, 235, 1)' : 'rgba(255,99,132,1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+            };
+
+            const groupDataByPeriod = (type, period) => {
+                const filteredData = budgetData.filter(item => item.type === type);
+                const grouped = {};
+
+                filteredData.forEach(item => {
+                    let key;
+                    const date = new Date(item.date);
+                    switch (period) {
+                        case '일별':
+                            key = item.date;
+                            break;
+                        case '주간별':
+                            const weekNumber = getWeekNumber(date);
+                            key = `${date.getFullYear()}-W${weekNumber}`;
+                            break;
+                        case '월별':
+                            key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                            break;
+                        case '년별':
+                            key = `${date.getFullYear()}`;
+                            break;
+                        case '전체':
+                        default:
+                            key = item.category;
+                            break;
+                    }
+
+                    grouped[key] = (grouped[key] || 0) + item.amount;
+                });
+
+                return grouped;
+            };
+
+            const getWeekNumber = (date) => {
+                const tempDate = new Date(date.getTime());
+                tempDate.setHours(0, 0, 0, 0);
+                tempDate.setDate(tempDate.getDate() + 4 - (tempDate.getDay() || 7));
+                const yearStart = new Date(tempDate.getFullYear(), 0, 1);
+                const weekNo = Math.ceil((((tempDate - yearStart) / 86400000) + 1) / 7);
+                return weekNo;
+            };
+
+            analysisTypeSelect.addEventListener('change', renderDataAnalysisChart);
+            analysisPeriodSelect.addEventListener('change', renderDataAnalysisChart);
+
+            // Settings form
+            settingsForm.addEventListener('submit', (event) => {
+                event.preventDefault();
+                currentCurrency = currencySelect.value;
+                saveData();
+                renderList();
+                renderAllItems();
+                if (dataAnalysisChartInstance) {
+                    renderDataAnalysisChart();
+                }
+                renderCalendar(currentCalendarDate);
+                alert('통화가 변경되었습니다.');
+                showScreen(mainScreen);
+            });
+
+            // Filter toggles
+            toggleFiltersBtn.addEventListener('click', () => {
+                const isHidden = filtersSection.classList.toggle('hidden');
+                toggleFiltersBtn.textContent = isHidden ? '필터 보기' : '필터 숨기기';
+            });
+
+            toggleCsvButtonsBtn.addEventListener('click', () => {
+                const isHidden = csvButtonsSection.classList.toggle('hidden');
+                toggleCsvButtonsBtn.textContent = isHidden ? 'CSV 버튼 보기' : 'CSV 버튼 숨기기';
+            });
+
+            // 초기화 버튼
+            resetMainBtn.addEventListener('click', () => {
+                if (confirm('메인 화면의 모든 항목을 삭제하시겠습니까?')) {
+                    budgetData = [];
+                    hiddenIndicesMainScreen = [];
+                    saveData();
+                    renderList();
+                    renderAllItems();
+                    renderCalendar(currentCalendarDate);
+                }
+            });
+
+            // 초기 상태: 필터, CSV 버튼 숨김
+            filtersSection.classList.add('hidden');
+            csvButtonsSection.classList.add('hidden');
+            toggleFiltersBtn.textContent = '필터 보기';
+            toggleCsvButtonsBtn.textContent = 'CSV 버튼 보기';
+
+            // Calendar
+            const renderCalendar = (date) => {
+                calendarElement.innerHTML = '';
+                const year = date.getFullYear();
+                const month = date.getMonth();
+                currentMonthYear.textContent = `${year}년 ${month + 1}월`;
+                renderMonthlyTotals(year, month);
+
+                const firstDay = new Date(year, month, 1).getDay();
+                const lastDate = new Date(year, month + 1, 0).getDate();
+
+                const daysOfWeek = ['일', '월', '화', '수', '목', '금', '토', '주간합계'];
+                daysOfWeek.forEach(day => {
+                    const dayHeader = document.createElement('div');
+                    dayHeader.classList.add('day-header');
+                    dayHeader.textContent = day;
+                    calendarElement.appendChild(dayHeader);
+                });
+
+                let currentDay = 1;
+                let weekDay = 0;
+                let weeklyData = { income: 0, expense: 0 };
+
+                // pad empty cells before first day
+                for (let i = 0; i < firstDay; i++) {
+                    const emptyCell = document.createElement('div');
+                    emptyCell.classList.add('day');
+                    calendarElement.appendChild(emptyCell);
+                    weekDay++;
+                }
+
+                while (currentDay <= lastDate) {
+                    const dayCell = document.createElement('div');
+                    dayCell.classList.add('day');
+
+                    const dateNumber = document.createElement('div');
+                    dateNumber.classList.add('date-number');
+                    dateNumber.textContent = currentDay;
+                    dayCell.appendChild(dateNumber);
+
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(currentDay).padStart(2, '0')}`;
+                    const dayData = budgetData.filter(item => item.date === dateStr);
+
+                    const incomeSum = dayData.filter(item => item.type === '수입').reduce((sum, item) => sum + item.amount, 0);
+                    const expenseSum = dayData.filter(item => item.type === '지출').reduce((sum, item) => sum + item.amount, 0);
+
+                    if (incomeSum > 0) {
+                        const incomeDiv = document.createElement('div');
+                        incomeDiv.classList.add('income');
+                        incomeDiv.textContent = `수입: ${formatCurrency(incomeSum)}`;
+                        dayCell.appendChild(incomeDiv);
+                    }
+
+                    if (expenseSum > 0) {
+                        const expenseDiv = document.createElement('div');
+                        expenseDiv.classList.add('expense');
+                        expenseDiv.textContent = `지출: ${formatCurrency(expenseSum)}`;
+                        dayCell.appendChild(expenseDiv);
+                    }
+
+                    weeklyData.income += incomeSum;
+                    weeklyData.expense += expenseSum;
+
+                    calendarElement.appendChild(dayCell);
+                    weekDay++;
+                    if (weekDay === 7 || currentDay === lastDate) {
+                        // 주간합계 칸
+                        const weeklyTotalCell = document.createElement('div');
+                        weeklyTotalCell.classList.add('weekly-total-cell');
+                        const weeklyTotalsDiv = document.createElement('div');
+                        weeklyTotalsDiv.classList.add('weekly-totals');
+                        weeklyTotalsDiv.innerHTML = `수입: <span style="color:blue;">${formatCurrency(weeklyData.income)}</span><br>지출: <span style="color:red;">${formatCurrency(weeklyData.expense)}</span>`;
+                        weeklyTotalCell.appendChild(weeklyTotalsDiv);
+                        calendarElement.appendChild(weeklyTotalCell);
+
+                        // reset week
+                        weekDay = 0;
+                        weeklyData = { income: 0, expense: 0 };
+                    }
+
+                    currentDay++;
+                }
+
+                // 남은 칸은 주간합계 셀로 인해 정확히 맞출 수 있음(주단위로 끊기 때문에 추가 빈칸 불필요)
+            };
+
+            const renderMonthlyTotals = (year, month) => {
+                const monthlyData = budgetData.filter(item => {
+                    const itemDate = new Date(item.date);
+                    return itemDate.getFullYear() === year && itemDate.getMonth() === month;
+                });
+                const monthlyIncome = monthlyData.filter(item => item.type === '수입').reduce((sum, i) => sum + i.amount, 0);
+                const monthlyExpense = monthlyData.filter(item => item.type === '지출').reduce((sum, i) => sum + i.amount, 0);
+                monthlyTotals.textContent = `월총: 수입 ${formatCurrency(monthlyIncome)}, 지출 ${formatCurrency(monthlyExpense)}`;
+            };
+
+            prevMonthBtn.addEventListener('click', () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+                renderCalendar(currentCalendarDate);
+            });
+
+            nextMonthBtn.addEventListener('click', () => {
+                currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+                renderCalendar(currentCalendarDate);
+            });
+
+            renderCalendar(currentCalendarDate);
+        });
+    </script>
+</body>
+</html>
